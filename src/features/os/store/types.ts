@@ -3,9 +3,6 @@ export type BootPhase = "hidden" | "booting" | "welcome" | "complete";
 
 // CUSTOMIZE: Add/remove/rename apps here. Each entry needs a matching component in app-registry.
 export enum AppID {
-	Yield = "app.yield",
-	Debate = "app.debate",
-	PassFX = "app.passfx",
 	Terminal = "app.terminal",
 	About = "app.about",
 	Settings = "app.settings",
@@ -69,9 +66,6 @@ export interface WindowSpawnConfig {
 
 // CUSTOMIZE: Default window dimensions per app (width x height in px)
 export const DEFAULT_WINDOW_SIZES: Record<AppID, WindowSize> = {
-	[AppID.Yield]: { width: 900, height: 650 },
-	[AppID.Debate]: { width: 850, height: 600 },
-	[AppID.PassFX]: { width: 900, height: 650 },
 	[AppID.Terminal]: { width: 780, height: 520 },
 	[AppID.About]: { width: 780, height: 520 },
 	[AppID.Settings]: { width: 680, height: 480 },
@@ -82,19 +76,10 @@ export const DEFAULT_WINDOW_SIZES: Record<AppID, WindowSize> = {
 };
 
 // CUSTOMIZE: Apps that maximize to fill viewport on desktop
-export const MAXIMIZED_APPS: Set<AppID> = new Set([
-	AppID.Yield,
-	AppID.Debate,
-	AppID.PassFX,
-	AppID.Browser,
-]);
+export const MAXIMIZED_APPS: Set<AppID> = new Set([AppID.Browser]);
 
 // CUSTOMIZE: Apps that auto-enter fullscreen (hides dock and system bar)
-export const AUTO_FULLSCREEN_APPS: Set<AppID> = new Set([
-	AppID.Yield,
-	AppID.Debate,
-	AppID.PassFX,
-]);
+export const AUTO_FULLSCREEN_APPS: Set<AppID> = new Set<AppID>([]);
 
 // CUSTOMIZE: Apps that fill available space on mobile (with padding)
 export const MOBILE_MAXIMIZED_APPS: Set<AppID> = new Set([
@@ -268,7 +253,11 @@ export interface NotificationInstance {
 }
 
 // CUSTOMIZE: Which apps count toward "explored all" notification
-export const PROJECT_APP_IDS = [AppID.Yield, AppID.Debate, AppID.PassFX] as const;
+export const PROJECT_APP_IDS = [
+	AppID.FolderProjects,
+	AppID.FolderExperience,
+	AppID.Browser,
+] as const;
 
 export interface NotificationState {
 	queue: NotificationInstance[];

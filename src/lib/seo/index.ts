@@ -29,6 +29,7 @@ export {
 	isValidExperienceSlug,
 	isValidProjectSlug,
 	parsePathToState,
+	type RoutedFile,
 	windowToPath,
 } from "./path-routing";
 export { SiteIndex, type SiteIndexProps } from "./SiteIndex";

@@ -3,6 +3,19 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useState } from "react";
 
+import {
+	ARCHIVE_PROJECTS,
+	COMPETITION_SEASONS,
+	type CompetitionSeason,
+	FOCUS_AREAS,
+	formatCompetitionResult,
+	getResultsForProject,
+	PROFILE_INTRO,
+	PROFILE_PARAGRAPHS,
+	PROJECTS,
+	type Project,
+} from "@/lib/portfolio";
+
 import type { AboutTabId } from "./TabNavigation";
 
 export interface TabContentProps {
@@ -38,12 +51,60 @@ export const TabContent = memo(function TabContent({ activeTab }: TabContentProp
 });
 
 function OverviewPanel() {
+	const latest = COMPETITION_SEASONS[0];
 	return (
-		<div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" className="space-y-4">
+		<div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" className="space-y-5">
 			<h2 className="font-mono text-sm font-medium text-white/70">{"// Overview"}</h2>
-			<div className="space-y-4 text-sm leading-relaxed text-white/60">
-				<p>I like to build cool things, like this website!</p>
+			<div className="space-y-3 text-sm leading-relaxed text-white/60">
+				<p>{PROFILE_INTRO}</p>
+				{PROFILE_PARAGRAPHS.map((paragraph) => (
+					<p key={paragraph}>{paragraph}</p>
+				))}
 			</div>
+
+			<section className="space-y-2">
+				<h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+					Working on
+				</h3>
+				<ul className="space-y-1.5">
+					{PROJECTS.map((project) => (
+						<li key={project.slug} className="text-xs leading-relaxed text-white/50">
+							<span className="font-mono text-white/75">{project.name}</span>
+							<span className="text-white/30"> · </span>
+							{project.tagline}
+						</li>
+					))}
+				</ul>
+			</section>
+
+			{latest && (
+				<section className="space-y-2">
+					<h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">
+						Latest result · {latest.id}
+					</h3>
+					<ul className="space-y-1.5">
+						{latest.results.map((result) => (
+							<li key={formatCompetitionResult(result)} className="text-xs text-white/50">
+								{formatCompetitionResult(result)}
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+
+			<section className="space-y-2">
+				<h3 className="text-[11px] font-medium uppercase tracking-wider text-white/30">Focus</h3>
+				<div className="flex flex-wrap gap-1.5">
+					{FOCUS_AREAS.map((area) => (
+						<span
+							key={area}
+							className="rounded bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] text-white/50"
+						>
+							{area}
+						</span>
+					))}
+				</div>
+			</section>
 		</div>
 	);
 }
@@ -53,148 +114,80 @@ function ProjectsPanel() {
 		<div role="tabpanel" id="panel-projects" aria-labelledby="tab-projects" className="space-y-4">
 			<h2 className="font-mono text-sm font-medium text-white/70">{"// Projects"}</h2>
 			<div className="space-y-3">
-				{PROJECTS_DATA.map((project) => (
-					<ProjectCard key={project.name} project={project} />
+				{PROJECTS.map((project) => (
+					<ProjectCard key={project.slug} project={project} />
 				))}
 			</div>
+
+			<h2 className="pt-2 font-mono text-sm font-medium text-white/70">{"// Earlier work"}</h2>
+			<ul className="space-y-2">
+				{ARCHIVE_PROJECTS.map((project) => (
+					<li key={project.name} className="text-xs leading-relaxed">
+						<ExternalLink href={project.repoUrl}>{project.name}</ExternalLink>
+						<span className="text-white/30"> · {project.year}</span>
+						<p className="text-white/40">{project.blurb}</p>
+					</li>
+				))}
+			</ul>
 		</div>
 	);
 }
 
-interface ProjectEntry {
-	name: string;
-	tagline: string;
-	version: string;
-	blurb: string;
-	repoUrl: string;
-	paperUrl: string;
+function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
+	return (
+		<a
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			onClick={(e) => {
+				// Framer-drag windows can swallow default <a> navigation; force the open.
+				e.preventDefault();
+				window.open(href, "_blank", "noopener,noreferrer");
+			}}
+			className="relative z-10 pointer-events-auto text-xs font-medium text-blue-400 hover:underline"
+		>
+			{children}
+		</a>
+	);
 }
 
-const PROJECTS_DATA: ProjectEntry[] = [
-	{
-		name: "claude_preflight",
-		tagline: "Directing Intelligence with Governed Agents",
-		version: "v0.9.9",
-		blurb:
-			"Fail-closed Cedar policy gate, human ratification, and an anti-forgetting session bundle for frontier coding agents.",
-		repoUrl: "https://github.com/JKSNS/claude_preflight",
-		paperUrl: "/papers/claude_preflight_v0.9.9.pdf",
-	},
-	{
-		name: "project_kraken",
-		tagline: "A Cascade CTF-Autosolver",
-		version: "v0.2.5",
-		blurb:
-			"Cheapest-first cascade that tries deterministic tooling before model calls, with a deterministic flag oracle and a closed-loop optimizer.",
-		repoUrl: "https://github.com/JKSNS/project_kraken",
-		paperUrl: "/papers/project_kraken-v0.2.5.pdf",
-	},
-];
-
-function ProjectCard({ project }: { project: ProjectEntry }) {
+function ProjectCard({ project }: { project: Project }) {
+	const results = getResultsForProject(project.slug);
 	return (
 		<div className="rounded-lg border border-white/[0.06] px-4 py-3">
 			<div className="flex flex-wrap items-baseline gap-2">
 				<span className="font-mono text-sm font-medium text-white/80">{project.name}</span>
-				<span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/50">
-					{project.version}
-				</span>
+				{project.version && (
+					<span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-white/50">
+						{project.version}
+					</span>
+				)}
+				<span className="font-mono text-[10px] text-white/30">{project.updated}</span>
 			</div>
 			<p className="mt-1 text-xs font-medium text-white/60">{project.tagline}</p>
 			<p className="mt-2 text-xs leading-relaxed text-white/40">{project.blurb}</p>
+			<ul className="mt-2 space-y-1">
+				{project.highlights.map((highlight) => (
+					<li key={highlight} className="text-xs leading-relaxed text-white/45">
+						<span className="mr-1.5 text-white/20">-</span>
+						{highlight}
+					</li>
+				))}
+			</ul>
+			{results.length > 0 && (
+				<p className="mt-2 text-[11px] text-white/35">
+					Also in Competitions:{" "}
+					{results.map(({ season, result }) => `${result.event} (${season})`).join(", ")}
+				</p>
+			)}
+			<p className="mt-2 font-mono text-[10px] text-white/30">{project.stack.join(" · ")}</p>
 			<div className="mt-3 flex flex-wrap gap-3">
-				<a
-					href={project.repoUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={(e) => {
-						e.preventDefault();
-						window.open(project.repoUrl, "_blank", "noopener,noreferrer");
-					}}
-					className="relative z-10 pointer-events-auto text-xs font-medium text-blue-400 hover:underline"
-				>
-					GitHub
-				</a>
-				<a
-					href={project.paperUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={(e) => {
-						e.preventDefault();
-						window.open(project.paperUrl, "_blank", "noopener,noreferrer");
-					}}
-					className="relative z-10 pointer-events-auto text-xs font-medium text-blue-400 hover:underline"
-				>
-					Paper (PDF)
-				</a>
+				<ExternalLink href={project.repoUrl}>GitHub</ExternalLink>
+				{project.paperUrl && <ExternalLink href={project.paperUrl}>Paper (PDF)</ExternalLink>}
 			</div>
 		</div>
 	);
 }
-
-interface ExperienceEntry {
-	company: string;
-	role: string;
-	period: string;
-	highlights: string[];
-}
-
-const EXPERIENCE_DATA: ExperienceEntry[] = [
-	{
-		company: "2026-2027",
-		role: "Competitions",
-		period: "2026 - 2027",
-		highlights: [
-			"Sandia National Laboratories Lab-Wide ML/DL Hackathon - 1st Place",
-		],
-	},
-	{
-		company: "2025-2026",
-		role: "Cybersecurity Competitions",
-		period: "2025 - 2026",
-		highlights: [
-			"RMCCDC Regionals - 2nd Place",
-			"RMCCDC Qualifiers - 1st Place",
-			"U.S. DoE's CyberForce - Competitor",
-			"WRCCDC Invitational #1 - 3rd Place",
-			"WRCCDC Invitational #3 - 2nd Place",
-			"WRCCDC Invitational #4 - Competitor",
-			"WRCCDC Invitational #5 - 3rd Place",
-			"MWCCDC Invitational #1 - 2nd Place",
-			"MWCCDC Invitational #2 - Competitor",
-			"MWCCDC Invitational #3 - 1st Place",
-			"Sandia National Laboratories Internal ML Competition - 1st Place",
-			"Sandia National Laboratories TracerFire DFIR CTF - 2nd Place",
-			"Lockheed Martin Aerospace Cyber Range DefCon 33 CTF - 1st blood, challenge 12",
-		],
-	},
-	{
-		company: "2024-2025",
-		role: "Cybersecurity Competitions",
-		period: "2024 - 2025",
-		highlights: [
-			"National CCDC - Competitor",
-			"RMCCDC Regionals - 1st Place",
-			"RMCCDC Qualifiers - 1st Place",
-			"WRCCDC Invitational #3 - Competitor",
-			"WRCCDC Invitational #2 - Competitor",
-			"MWCCDC Invitational - 2nd Place",
-			"eCitadel - Competitor",
-			"U.S. DoE's CyberForce - Competitor",
-		],
-	},
-	{
-		company: "2023-2024",
-		role: "Cybersecurity Competitions",
-		period: "2023 - 2024",
-		highlights: [
-			"National CCDC - Alternate",
-			"RMCCDC Regionals - 1st Place (Alternate)",
-			"RMCCDC Qualifiers - 1st Place (Alternate)",
-			"Hivestorm - Competitor",
-		],
-	},
-];
 
 function ExperiencePanel() {
 	return (
@@ -204,14 +197,14 @@ function ExperiencePanel() {
 			aria-labelledby="tab-experience"
 			className="space-y-3"
 		>
-			{EXPERIENCE_DATA.map((entry, i) => (
-				<SeasonCard key={entry.company} entry={entry} defaultOpen={i === 0} />
+			{COMPETITION_SEASONS.map((season, i) => (
+				<SeasonCard key={season.id} season={season} defaultOpen={i <= 1} />
 			))}
 		</div>
 	);
 }
 
-function SeasonCard({ entry, defaultOpen }: { entry: ExperienceEntry; defaultOpen: boolean }) {
+function SeasonCard({ season, defaultOpen }: { season: CompetitionSeason; defaultOpen: boolean }) {
 	const [open, setOpen] = useState(defaultOpen);
 
 	return (
@@ -219,22 +212,28 @@ function SeasonCard({ entry, defaultOpen }: { entry: ExperienceEntry; defaultOpe
 			<button
 				type="button"
 				onClick={() => setOpen(!open)}
+				aria-expanded={open}
 				className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
 			>
-				<span className="text-xs font-medium text-white/80">{entry.company}</span>
+				<span className="text-xs font-medium text-white/80">
+					{season.id}
+					<span className="ml-2 font-normal text-white/30">
+						{season.results.length} {season.results.length === 1 ? "event" : "events"}
+					</span>
+				</span>
 				<span className="text-xs text-white/30 transition-transform" style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>
 					&#9654;
 				</span>
 			</button>
 			{open && (
 				<div className="border-t border-white/[0.06] px-4 py-3">
-					<div className="space-y-1.5">
-						{entry.highlights.map((highlight) => (
-							<div key={highlight}>
-								<span className="text-xs text-white/50">{highlight}</span>
-							</div>
+					<ul className="space-y-1.5">
+						{season.results.map((result) => (
+							<li key={formatCompetitionResult(result)} className="text-xs text-white/50">
+								{formatCompetitionResult(result)}
+							</li>
 						))}
-					</div>
+					</ul>
 				</div>
 			)}
 		</div>

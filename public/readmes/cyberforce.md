@@ -1,40 +1,30 @@
-## DOE CyberForce Competition
+# DOE CyberForce
 
-CyberForce is a cybersecurity competition organized by the U.S. Department of Energy where collegiate teams defend simulated energy sector infrastructure against coordinated cyberattacks.
+CyberForce is the U.S. Department of Energy's collegiate competition for defending critical infrastructure. Teams defend operational technology (OT) and IT networks modeled on the energy sector against coordinated attacks. I competed in 2024-2025 and 2025-2026.
 
-### What It Is
+## What teams have to do
 
-CyberForce places teams in charge of defending operational technology (OT) and IT networks modeled after real energy infrastructure. The competition emphasizes the unique challenges of securing critical infrastructure where availability is paramount and downtime has consequences beyond data loss.
-
-Teams must:
-- Defend both IT and OT network segments simultaneously
-- Maintain critical services while hardening against active threats
-- Implement monitoring and detection to identify attacker activity
+- Defend IT and OT network segments at the same time
+- Keep critical services running while hardening against active threats
+- Stand up monitoring and detection to spot attacker activity
 - Respond to incidents without disrupting operational processes
-- Complete security documentation and compliance requirements
+- Complete security documentation and compliance tasks
 
-### How It Works
+## How it differs from CCDC
 
-Unlike traditional CTF competitions, CyberForce is a defense-focused exercise that mirrors the reality of protecting critical infrastructure. Attackers are persistent and sophisticated, services must stay running, and the scoring model penalizes both security failures and availability outages.
+The environment includes industrial control system simulators alongside standard enterprise IT. Availability matters even more than usual: the scoring penalizes outages as well as compromises, so you cannot simply lock everything down. Every hardening step is a trade-off against keeping the plant running.
 
-The competition environment includes:
-- Industrial control system simulators
-- Standard enterprise IT infrastructure
-- Network monitoring and SIEM tools
-- Multiple attack vectors targeting both IT and OT
-
-### What It Demonstrates
-
-CyberForce teaches a critical lesson about security in practice: you cannot simply lock everything down when systems need to remain operational. Defenders must find the balance between hardening and availability, making thoughtful trade-offs under pressure.
-
-### Key Skills Applied
+## Skills it exercises
 
 - OT/IT network defense and segmentation
 - SIEM configuration and alert tuning
-- Threat detection in mixed environments
-- Incident response with availability constraints
-- Security monitoring and log analysis
+- Threat detection across mixed IT and OT environments
+- Incident response under availability constraints
 - Network traffic analysis with Wireshark and Zeek
-- Cross-team coordination for multi-segment defense
 
-GitHub: [JKSNS](https://github.com/JKSNS)
+## Results by season
+
+| Season | Event | Result |
+|---|---|---|
+| [2025-2026](/experience/season-2025-2026) | U.S. DoE's CyberForce | Competitor |
+| [2024-2025](/experience/season-2024-2025) | U.S. DoE's CyberForce | Competitor |

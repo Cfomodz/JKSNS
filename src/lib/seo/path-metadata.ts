@@ -1,12 +1,6 @@
-
 import type { Metadata } from "next";
 import { SITE_CONFIG } from "./metadata";
-import {
-	getExperienceFileBySlug,
-	getProjectFileBySlug,
-	isValidExperienceSlug,
-	isValidProjectSlug,
-} from "./path-routing";
+import { getExperienceFileBySlug, getProjectFileBySlug, type RoutedFile } from "./path-routing";
 
 /**
  * Route configuration for metadata generation.
@@ -32,43 +26,25 @@ const ROUTE_METADATA: Record<string, RouteMetadata> = {
 	"/": DEFAULT_METADATA,
 	"/about": {
 		title: "About",
-		description: "",
+		description:
+			"About Jackson Stephens: security engineer and researcher. Collegiate cyber defense competitor (RMCCDC, National CCDC, DOE CyberForce) building AI-augmented security tools.",
 	},
 	"/resume": {
 		title: "Resume",
-		description: "",
+		description:
+			"Resume of Jackson Stephens: security engineering, incident response, CTF auto-solving, agent governance, and competition results.",
 	},
 	"/projects": {
 		title: "Projects",
-		description: "",
-	},
-	"/projects/rmccdc": {
-		title: "RMCCDC",
-		description: "",
-	},
-	"/projects/nccdc": {
-		title: "National CCDC",
-		description: "",
-	},
-	"/projects/cyberforce": {
-		title: "DOE CyberForce",
-		description: "",
+		description:
+			"Projects by Jackson Stephens: KRAKEN (autonomous CTF solver), claude_preflight (governed coding agents), distillr (grounded daily digests), and JSOS.",
 	},
 	"/experience": {
 		title: "Competitions",
-		description: "",
+		description:
+			"Competition history of Jackson Stephens by season: CCDC, DOE CyberForce, Sandia National Laboratories, and CTFs including KalmarCTF and BYU EOS CTF.",
 	},
 };
-
-/**
- * File-specific metadata for project markdown files.
- */
-const PROJECT_FILE_METADATA: Record<string, RouteMetadata> = {};
-
-/**
- * File-specific metadata for experience markdown files.
- */
-const EXPERIENCE_FILE_METADATA: Record<string, RouteMetadata> = {};
 
 /**
  * Generate the canonical URL for a given path.
@@ -116,62 +92,39 @@ function buildMetadata(path: string, meta: RouteMetadata): Metadata {
 	};
 }
 
+function fileMetadata(file: RoutedFile): RouteMetadata {
+	return {
+		title: file.pageTitle,
+		description: file.description ?? SITE_CONFIG.description,
+	};
+}
+
 /**
- * Generate metadata for a static route.
+ * Generate metadata for a route.
  *
- * @param path - The route path (e.g., "/about", "/projects/yield")
+ * @param path - The route path (e.g., "/about", "/projects/project-kraken")
  * @returns Next.js Metadata object
  */
 export function generatePathMetadata(path: string): Metadata {
 	const normalizedPath = path.toLowerCase().replace(/\/$/, "") || "/";
 
-	// Check static routes first
 	const staticMeta = ROUTE_METADATA[normalizedPath];
 	if (staticMeta) {
 		return buildMetadata(normalizedPath, staticMeta);
 	}
 
-	// Check dynamic project file routes
-	const projectMatch = normalizedPath.match(/^\/projects\/(.+)$/);
-	if (projectMatch) {
-		const slug = projectMatch[1];
-		if (slug && !["rmccdc", "nccdc", "cyberforce"].includes(slug)) {
-			const fileMeta = PROJECT_FILE_METADATA[slug];
-			if (fileMeta) {
-				return buildMetadata(normalizedPath, fileMeta);
-			}
-			// Fallback for valid project files without custom metadata
-			const file = getProjectFileBySlug(slug);
-			if (file) {
-				return buildMetadata(normalizedPath, {
-					title: file.title,
-					description: "",
-				});
-			}
-		}
+	const projectSlug = normalizedPath.match(/^\/projects\/(.+)$/)?.[1];
+	const projectFile = projectSlug ? getProjectFileBySlug(projectSlug) : null;
+	if (projectFile) {
+		return buildMetadata(normalizedPath, fileMetadata(projectFile));
 	}
 
-	// Check dynamic experience file routes
-	const experienceMatch = normalizedPath.match(/^\/experience\/(.+)$/);
-	if (experienceMatch) {
-		const slug = experienceMatch[1];
-		if (slug) {
-			const fileMeta = EXPERIENCE_FILE_METADATA[slug];
-			if (fileMeta) {
-				return buildMetadata(normalizedPath, fileMeta);
-			}
-			// Fallback for valid experience files without custom metadata
-			const file = getExperienceFileBySlug(slug);
-			if (file) {
-				return buildMetadata(normalizedPath, {
-					title: file.title,
-					description: "",
-				});
-			}
-		}
+	const experienceSlug = normalizedPath.match(/^\/experience\/(.+)$/)?.[1];
+	const experienceFile = experienceSlug ? getExperienceFileBySlug(experienceSlug) : null;
+	if (experienceFile) {
+		return buildMetadata(normalizedPath, fileMetadata(experienceFile));
 	}
 
-	// Fallback to default homepage metadata
 	return buildMetadata("/", DEFAULT_METADATA);
 }
 
@@ -182,52 +135,17 @@ export function generatePathMetadata(path: string): Metadata {
  * @returns Next.js Metadata object or null if invalid slug
  */
 export function generateProjectFileMetadata(slug: string): Metadata | null {
-	if (!isValidProjectSlug(slug)) return null;
-
-	// Project apps have static metadata
-	if (["rmccdc", "nccdc", "cyberforce"].includes(slug)) {
-		return generatePathMetadata(`/projects/${slug}`);
-	}
-
-	const path = `/projects/${slug}`;
-	const fileMeta = PROJECT_FILE_METADATA[slug];
-	if (fileMeta) {
-		return buildMetadata(path, fileMeta);
-	}
-
 	const file = getProjectFileBySlug(slug);
-	if (file) {
-		return buildMetadata(path, {
-			title: file.title,
-			description: "",
-		});
-	}
-
-	return null;
+	return file ? buildMetadata(`/projects/${slug}`, fileMetadata(file)) : null;
 }
 
 /**
- * Generate metadata for an experience file route.
+ * Generate metadata for an experience (competitions) file route.
  *
  * @param slug - The experience file slug
  * @returns Next.js Metadata object or null if invalid slug
  */
 export function generateExperienceFileMetadata(slug: string): Metadata | null {
-	if (!isValidExperienceSlug(slug)) return null;
-
-	const path = `/experience/${slug}`;
-	const fileMeta = EXPERIENCE_FILE_METADATA[slug];
-	if (fileMeta) {
-		return buildMetadata(path, fileMeta);
-	}
-
 	const file = getExperienceFileBySlug(slug);
-	if (file) {
-		return buildMetadata(path, {
-			title: file.title,
-			description: "",
-		});
-	}
-
-	return null;
+	return file ? buildMetadata(`/experience/${slug}`, fileMetadata(file)) : null;
 }

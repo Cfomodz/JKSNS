@@ -1,5 +1,6 @@
 // Schema.org JSON-LD for search engine knowledge graphs
 
+import { PROJECTS } from "@/lib/portfolio";
 import { ENTITY, getSameAsUrls } from "./entity";
 import { SITE_CONFIG } from "./metadata";
 
@@ -142,7 +143,22 @@ export interface ProjectMetadata {
  * Project metadata registry.
  * Maps file IDs to their technical metadata.
  */
-export const PROJECT_METADATA: Record<string, ProjectMetadata> = {};
+export const PROJECT_METADATA: Record<string, ProjectMetadata> = Object.fromEntries(
+	PROJECTS.map((project) => [
+		`file.${project.slug}`,
+		{
+			name: project.name,
+			description: project.blurb,
+			codeRepository: project.repoUrl,
+			programmingLanguage: project.stack.filter((tech) =>
+				["Python", "Shell", "TypeScript", "JavaScript"].includes(tech),
+			),
+			keywords: project.keywords,
+			applicationCategory: project.applicationCategory,
+			license: "https://creativecommons.org/licenses/by-nc/4.0/",
+		} satisfies ProjectMetadata,
+	]),
+);
 
 /**
  * Generate the Person schema for Jackson Stephens.
@@ -161,16 +177,21 @@ export function generatePersonSchema(): PersonSchema {
 		url: ENTITY.url,
 		image: ENTITY.ogImage,
 		sameAs: getSameAsUrls(),
-		worksFor: {
-			"@type": "Organization",
-			name: ENTITY.currentEmployer.organization,
-			url: ENTITY.currentEmployer.organizationUrl,
-		},
-		alumniOf: ENTITY.education.map((edu) => ({
-			"@type": "EducationalOrganization" as const,
-			name: edu.institution,
-			url: edu.institutionUrl,
-		})),
+		// Only claim an employer or school when one is actually recorded.
+		...(ENTITY.currentEmployer.organization && {
+			worksFor: {
+				"@type": "Organization" as const,
+				name: ENTITY.currentEmployer.organization,
+				url: ENTITY.currentEmployer.organizationUrl || undefined,
+			},
+		}),
+		...(ENTITY.education.length > 0 && {
+			alumniOf: ENTITY.education.map((edu) => ({
+				"@type": "EducationalOrganization" as const,
+				name: edu.institution,
+				url: edu.institutionUrl,
+			})),
+		}),
 		knowsAbout: ENTITY.knowsAbout,
 	};
 }
@@ -207,10 +228,10 @@ export function generateProjectSchema(fileId: string): CreativeWorkSchema | null
 	return {
 		"@context": "https://schema.org",
 		"@type": "CreativeWork",
-		"@id": `${SITE_CONFIG.baseUrl}?app=markdown&file=${fileSlug}#project`,
+		"@id": `${SITE_CONFIG.baseUrl}/projects/${fileSlug}#project`,
 		name: metadata.name,
 		description: metadata.description,
-		url: `${SITE_CONFIG.baseUrl}?app=markdown&file=${fileSlug}`,
+		url: `${SITE_CONFIG.baseUrl}/projects/${fileSlug}`,
 		sameAs: metadata.codeRepository,
 		author: {
 			"@type": "Person",
@@ -245,21 +266,7 @@ export function generateSoftwareApplicationSchema(
 
 	const fileSlug = fileId.replace("file.", "");
 
-	// Map applicationCategory to Schema.org values
-	const categoryMap: Record<string, string> = {
-		EducationalApplication: "EducationalApplication",
-		SecurityApplication: "SecurityApplication",
-		EntertainmentApplication: "EntertainmentApplication",
-		UtilitiesApplication: "UtilitiesApplication",
-		SocialNetworkingApplication: "SocialNetworkingApplication",
-	};
-
-	// Determine canonical URL based on file type
-	const isProjectApp = ["rmccdc", "nccdc", "cyberforce"].includes(fileSlug);
-	const urlSlug = fileSlug;
-	const canonicalUrl = isProjectApp
-		? `${SITE_CONFIG.baseUrl}/projects/${urlSlug}`
-		: `${SITE_CONFIG.baseUrl}/projects/${fileSlug}`;
+	const canonicalUrl = `${SITE_CONFIG.baseUrl}/projects/${fileSlug}`;
 
 	return {
 		"@context": "https://schema.org",
@@ -268,7 +275,7 @@ export function generateSoftwareApplicationSchema(
 		name: metadata.name,
 		description: metadata.description,
 		url: canonicalUrl,
-		applicationCategory: categoryMap[metadata.applicationCategory] ?? "WebApplication",
+		applicationCategory: metadata.applicationCategory,
 		operatingSystem: "Web Browser",
 		author: {
 			"@type": "Person",

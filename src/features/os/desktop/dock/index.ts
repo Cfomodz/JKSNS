@@ -18,6 +18,5 @@ export {
 	isDockAppItem,
 	isDockStackItem,
 	MOBILE_DOCK_ITEMS,
-	PROJECTS_STACK,
 } from "./dock-config";
 export { type DeviceType, useDeviceType } from "./useDeviceType";

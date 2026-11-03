@@ -17,27 +17,49 @@ Opens at `http://localhost:3000`.
 
 ## What to Personalize
 
+### 0. Projects and Competitions (start here)
+
+Projects, competition results, and the bio live in one place, `src/lib/portfolio/`.
+The About app, the terminal filesystem, the desktop folders, page routes, the
+sitemap, and structured data all read from it.
+
+| File | What to change |
+|------|---------------|
+| `src/lib/portfolio/projects.ts` | Projects (name, blurb, highlights, links) and earlier work |
+| `src/lib/portfolio/competitions.ts` | Seasons, results, and the event series each result belongs to |
+| `src/lib/portfolio/profile.ts` | Overview paragraphs and focus areas |
+| `public/readmes/<event>.md` | Hand-written event write-ups (everything above `## Results by season`) |
+
+After editing the data, regenerate the markdown it produces:
+
+```bash
+npm run content:sync
+```
+
+That rewrites the season results (`comp-*.md`), project pages, `earlier-work.md`,
+and the `## Results by season` table in each event write-up. `npm run test:run`
+fails while any of them is out of date.
+
 ### 1. Your Identity
 
 | File | What to change |
 |------|---------------|
 | `src/features/os/desktop/AboutSystemModal.tsx` | Name, version, kernel name |
 | `src/features/apps/about/ProfileSidebar.tsx` | Name, title, avatar image, social links |
-| `src/features/apps/about/TabContent.tsx` | Overview text, experience entries, projects |
-| `src/features/apps/terminal/use-terminal-state.ts` | `about` command output, VFS file contents |
+| `src/features/apps/about/TabContent.tsx` | Layout of the About tabs and the System Manual text |
 | `src/features/apps/terminal/TerminalApp.tsx` | Welcome banner version string |
 | `src/lib/seo/metadata.ts` | Site title, description, OpenGraph tags |
-| `src/lib/seo/entity.ts` | Structured data (name, job title, URLs) |
+| `src/lib/seo/entity.ts` | Structured data (name, job title, location, employer, education, URLs) |
 | `app/layout.tsx` | Favicon paths, metadata |
 
 ### 2. Desktop Folders & Files
 
 | File | What to change |
 |------|---------------|
-| `src/features/os/filesystem/files.ts` | Desktop folder contents (what appears in Projects/Competitions folders) |
-| `src/features/os/filesystem/index.ts` | Folder IDs and registry |
-| `src/features/apps/terminal/use-terminal-state.ts` | The `VFS` object — terminal filesystem tree and file contents |
-| `public/readmes/*.md` | Markdown files opened when clicking desktop folder items |
+| `src/features/os/filesystem/files.ts` | Folder layout; contents are built from `src/lib/portfolio/` |
+| `src/features/os/desktop/useDesktop.ts` | Desktop icons (Projects, Competitions, Blog, Resume) |
+| `src/features/apps/terminal/use-terminal-state.ts` | Terminal filesystem layout; contents come from `src/lib/portfolio/` |
+| `public/readmes/*.md` | Markdown opened from the desktop folders (see section 0 for which are generated) |
 
 ### 3. Dock & Apps
 
@@ -46,9 +68,6 @@ Opens at `http://localhost:3000`.
 | `src/features/os/desktop/dock/dock-config.tsx` | Which apps appear in the dock, icons, order |
 | `src/features/os/store/types.ts` | `AppID` enum — add/remove app identifiers |
 | `src/features/os/window/app-registry.tsx` | Maps AppIDs to React components |
-| `src/features/apps/yield/YieldApp.tsx` | URL of your embedded project (iframe) |
-| `src/features/apps/debate/DebateApp.tsx` | URL of your embedded project (iframe) |
-| `src/features/apps/passfx/PassFXApp.tsx` | URL of your embedded project (iframe) |
 
 ### 4. Wallpapers
 
@@ -60,13 +79,8 @@ Opens at `http://localhost:3000`.
 
 ### 5. System Manual (FAQ)
 
-| File | What to change |
-|------|---------------|
-| `public/system-manual/about.md` | About section content |
-| `public/system-manual/projects-tech.md` | Technology Q&A |
-| `public/system-manual/using-this-portfolio.md` | Usage guide Q&A |
-| `public/system-manual/terms.md` | Terms of use |
-| `public/system-manual/privacy.md` | Privacy policy |
+The System Manual tab, including the privacy policy and terms of use, is inline in
+`src/features/apps/about/TabContent.tsx` (`ManualPanel`).
 
 ### 6. Terminal Commands
 
@@ -79,7 +93,10 @@ Games are separate components:
 
 ### 7. Favicon
 
-Replace `public/favicon.ico` with your own. Also update `public/assets/web_assets/favicon-96x96.png` and the references in `app/layout.tsx`.
+Replace `public/favicon.ico` and `public/assets/web_assets/favicon.ico` with your own. The PNG icons in
+`public/assets/web_assets/` (`favicon-96x96.png`, `apple-touch-icon.png`, and the two
+`web-app-manifest-*.png` files used by `public/manifest.json`) are crops of the profile photo;
+regenerate them at the same sizes if you change it.
 
 ### 8. Boot Animation
 
@@ -101,12 +118,8 @@ src/
       terminal/     # Terminal emulator with VFS, games, easter eggs
       settings/     # System preferences (wallpaper, dock, terminal color)
       folder/       # Finder-style folder viewer
-      system-manual/ # System manual / FAQ viewer
       markdown/     # Markdown file viewer
-      contact/      # Contact form
-      yield/        # Iframe embed app (project 1)
-      debate/       # Iframe embed app (project 2)
-      passfx/       # Iframe embed app (project 3)
+      browser/      # Blog / technical reports
     os/
       boot/         # Boot animation sequence
       desktop/      # Desktop, dock, system bar, wallpaper, icons
@@ -115,6 +128,7 @@ src/
       filesystem/   # Virtual filesystem for desktop folders
       notification/ # macOS-style notification pills
   lib/
+    portfolio/      # Projects, competitions, bio: the content source of truth
     seo/            # Metadata, structured data, URL routing
     analytics.ts    # Event tracking
 ```
@@ -164,4 +178,4 @@ npm run build
 ## Easter Eggs
 
 Hidden terminal commands (not shown in `help`):
-`sl`, `matrix`, `cowsay`, `fortune`, `apt moo`, `rev`, `neofetch`, `ping`, `coffee`, `sudo`, `rm -rf`
+`sl`, `cowsay`, `apt moo`, `rev`, `ping`, `coffee`, `sudo`, `rm -rf`, `mkdir`, `git status`, and the games `snake`, `tetris`, `2048`

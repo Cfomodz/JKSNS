@@ -1,33 +1,31 @@
-## National CCDC
+# National CCDC
 
-The National Collegiate Cyber Defense Competition (NCCDC) is the championship event of the CCDC program, bringing together regional winners from across the country to defend enterprise infrastructure against elite red team operators.
+The National Collegiate Cyber Defense Competition (NCCDC) is the championship event of the CCDC program. Each region sends its champion, and those teams defend enterprise infrastructure against a red team of professional security practitioners.
 
-### What It Is
+## My seasons
 
-National CCDC is the culmination of the collegiate cyber defense competition circuit. Teams that win their regional competitions advance to nationals, where they face the most challenging defensive scenario in collegiate cybersecurity.
+Our team reached Nationals by winning the Rocky Mountain regional. I was an alternate for the 2023-2024 national team and competed at Nationals in 2024-2025. In 2025-2026 we placed 2nd at regionals, one spot short of a return trip. The [RMCCDC write-up](/experience/rmccdc) covers the regional seasons.
 
-The national competition features:
-- Complex, multi-tiered enterprise networks with dozens of services
-- A professional red team composed of industry security experts
-- Realistic business injects requiring non-technical deliverables
-- Intense scoring across security, availability, and business operations
+At Nationals I worked across Windows Server, Linux, and network appliances, built and ran incident-response playbooks under live attack, and helped newer teammates with defensive technique and competition strategy.
 
-### What It Demonstrates
+## What the competition is
 
-Competing at nationals means performing under maximum pressure against the best teams and attackers in the country. The red team at nationals does not hold back. Services are targeted aggressively, novel attack techniques are employed, and defenders must adapt in real time.
+- Multi-tiered enterprise networks with dozens of services to keep running
+- A professional red team that targets those services throughout the event
+- Business injects from simulated management that need written, non-technical deliverables
+- Scoring that weighs security, service availability, and business operations together
 
-### Key Skills Applied
+## Skills it exercises
 
-- Enterprise-scale network defense
-- Advanced incident response and forensics
-- Cross-platform system administration (Windows, Linux, networking)
-- Service hardening while maintaining availability
-- Team leadership and task delegation
-- Rapid decision-making under adversarial pressure
+- Enterprise-scale network defense and service hardening without downtime
+- Incident response and forensics while the attacker is still active
+- Cross-platform administration: Windows, Linux, and networking
+- Delegation and fast decisions inside a team of eight
 - Written and verbal incident reporting
 
-### The Experience
+## Results by season
 
-National CCDC is unlike any other cybersecurity experience. It compresses months of security operations into hours. Every lesson from regional competitions, every practice session, and every late-night lab builds toward this event. The intensity is unmatched, and the skills forged in this environment transfer directly to professional security work.
-
-GitHub: [JKSNS](https://github.com/JKSNS)
+| Season | Event | Result |
+|---|---|---|
+| [2024-2025](/experience/season-2024-2025) | National CCDC | Competitor |
+| [2023-2024](/experience/season-2023-2024) | National CCDC | Alternate |

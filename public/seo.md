@@ -6,10 +6,10 @@ Technical reference for the SEO implementation in JSOS.
 
 ## Architecture Overview
 
-The portfolio uses a **Hybrid State Architecture** that enables search engines to crawl a Single-Page Application (SPA) "OS" interface. URLs drive the system state server-side, ensuring every "Window" has a unique, indexable URL while maintaining the spatial OS visual metaphor.
+The portfolio uses a **Hybrid State Architecture** that lets search engines crawl a single-page "OS" interface. Each route is statically exported; the server parses the path, hydrates the window store, and renders the window's content in the initial HTML.
 
 ```
-URL Request → Server Component → Parse Path → Hydrate Store → SSR Window Content
+URL Request → Static Page → Parse Path → Hydrate Store → SSR Window Content
 ```
 
 ---
@@ -20,37 +20,23 @@ URL Request → Server Component → Parse Path → Hydrate Store → SSR Window
 |---------|-------------|---------|
 | `/` | Desktop (no windows) | `https://jackson.stephens.sh` |
 | `/about` | About window | `/about` |
-| `/projects/rmccdc` | RMCCDC project | `/projects/rmccdc` |
-| `/projects/[slug]` | Project markdown | `/projects/sandia-hackathon` |
-| `/experience/[slug]` | Experience markdown | `/experience/nccdc-competitor` |
+| `/resume` | Resume in the Markdown Viewer | `/resume` |
+| `/projects` | Projects folder | `/projects` |
+| `/projects/[slug]` | A project write-up | `/projects/project-kraken` |
+| `/experience` | Competitions folder | `/experience` |
+| `/experience/[slug]` | A season's results or an event write-up | `/experience/season-2025-2026`, `/experience/rmccdc` |
 
-### Slug Mappings
+### Where slugs come from
 
-**Apps:**
-```
-rmccdc → AppID.Yield (RMCCDC)
-nccdc → AppID.Debate (National CCDC)
-cyberforce → AppID.PassFX (CyberForce)
-about → AppID.About
-contact → AppID.Contact
-terminal → AppID.Terminal
-settings → AppID.Settings
-projects → AppID.FolderProjects
-experience → AppID.FolderExperience
-markdown → AppID.MarkdownViewer
-```
+File slugs are not listed by hand. `src/features/os/filesystem/files.ts` builds the Projects and Competitions folders from `src/lib/portfolio/`, and `src/lib/seo/path-routing.ts` derives every `/projects/[slug]` and `/experience/[slug]` route, the sitemap, and the crawler index from those folders. Adding a project or a season adds its page.
 
-**Files:**
-```
-rmccdc → file.rmccdc
-nccdc → file.nccdc
-cyberforce → file.cyberforce
-sandia-hackathon → file.sandia-hackathon
-security-tooling → file.security-tooling
-forensics-ir → file.forensics-ir
-nccdc-competitor → file.nccdc-competitor
-security-research → file.security-research
-```
+**Projects:** `project-kraken`, `claude-preflight`, `distillr`, `jsos`, `earlier-work`
+
+**Competitions:** `season-2026-2027`, `season-2025-2026`, `season-2024-2025`, `season-2023-2024`, `nccdc`, `rmccdc`, `cyberforce`, `sandia`, `ctf`, `defense`
+
+### Legacy URLs
+
+Query-parameter URLs (`/?app=...&file=...`) map to clean paths through `getLegacyRedirectPath`. The old competition pages that lived under `/projects/rmccdc`, `/projects/nccdc`, and `/projects/cyberforce` now live under `/experience/`.
 
 ---
 
@@ -58,75 +44,42 @@ security-research → file.security-research
 
 **File:** `src/lib/seo/schema.ts`
 
-### Person Schema
-
-Injected in `app/layout.tsx` on every page:
-
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "ProfilePage",
-  "mainEntity": {
-    "@type": "Person",
-    "@id": "https://jackson.stephens.sh/#person",
-    "name": "Jackson Stephens",
-    "jobTitle": "Security Engineer & Researcher",
-    "sameAs": [
-      "https://github.com/JKSNS",
-      "https://www.linkedin.com/in/profile-jackson-stephens/",
-      "https://twitter.com/JKSNS"
-    ],
-    "knowsAbout": ["Security Engineering", "Penetration Testing", "Vulnerability Research", ...]
-  }
-}
-```
+- **ProfilePage + Person** on every page (`app/layout.tsx`). `worksFor` and `alumniOf` are omitted until `src/lib/seo/entity.ts` records an employer or school.
+- **WebSite** on every page.
+- **SoftwareApplication** on each project page, built from `src/lib/portfolio/projects.ts`.
 
 ---
 
 ## File Structure
 
 ```
+src/lib/portfolio/          # Content source of truth
+├── competitions.ts         # Seasons, results, event series
+├── projects.ts             # Projects and earlier work
+├── profile.ts              # Bio and focus areas
+├── markdown.ts             # Generators for public/readmes/*.md
+└── content-sync.test.ts    # Fails when public/readmes/ drifts from the data
+
 src/lib/seo/
 ├── index.ts          # Barrel exports
-├── url-state.ts      # URL ↔ State mapping
-├── metadata.ts       # Dynamic metadata generation
-├── path-metadata.ts  # Path-based metadata
-├── path-routing.ts   # Path-based routing
+├── url-state.ts      # Legacy query-param ↔ state mapping
+├── metadata.ts       # Site config and app metadata
+├── path-metadata.ts  # Per-route metadata
+├── path-routing.ts   # Path ↔ window state, sitemap paths
 ├── entity.ts         # Entity identity data
 ├── schema.ts         # Schema.org JSON-LD
 └── SiteIndex.tsx     # Hidden nav for crawlers
 
-src/features/os/
-├── store/
-│   └── StoreHydrator.tsx    # Zustand hydration
-├── filesystem/
-│   └── files.ts             # Virtual filesystem
-├── desktop/
-│   ├── wallpapers.ts        # Wallpaper config
-│   └── dock/
-│       └── dock-config.tsx  # Dock configuration
-└── ssr/
-    ├── SSRContentProjection.tsx
-    ├── SSREntityCard.tsx
-    ├── SSRFAQContent.tsx
-    └── SSRResumeContent.tsx
-
 app/
-├── (os)/
+├── page.tsx
+├── about/page.tsx
+├── resume/page.tsx
+├── projects/
 │   ├── page.tsx
-│   ├── about/page.tsx
-│   ├── contact/page.tsx
-│   ├── projects/
-│   │   ├── page.tsx
-│   │   ├── yield/page.tsx    (RMCCDC)
-│   │   ├── debate/page.tsx   (National CCDC)
-│   │   ├── passfx/page.tsx   (CyberForce)
-│   │   └── [slug]/page.tsx
-│   ├── experience/
-│   │   ├── page.tsx
-│   │   └── [slug]/page.tsx
-│   ├── resume/page.tsx
-│   └── faq/page.tsx
+│   └── [slug]/page.tsx
+├── experience/
+│   ├── page.tsx
+│   └── [slug]/page.tsx
 ├── layout.tsx
 ├── sitemap.ts
 └── robots.ts
@@ -136,10 +89,10 @@ app/
 
 ## Verification
 
-### Test URL States
 ```
-https://jackson.stephens.sh                        # Desktop
-https://jackson.stephens.sh/about                  # About window
-https://jackson.stephens.sh/projects/rmccdc        # RMCCDC project
-https://jackson.stephens.sh/experience/nccdc-competitor  # NCCDC experience
+https://jackson.stephens.sh                              # Desktop
+https://jackson.stephens.sh/about                        # About window
+https://jackson.stephens.sh/projects/project-kraken      # Project write-up
+https://jackson.stephens.sh/experience/season-2025-2026  # Season results
+https://jackson.stephens.sh/sitemap.xml                  # Every route above
 ```

@@ -1,10 +1,12 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { memo, type ReactNode, useCallback, useEffect, useState } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { parsePathToState } from "@/lib/seo/path-routing";
+import { useNavigate } from "@/os/hooks";
 import type { AppComponentProps } from "@/os/window/app-registry";
 import { logBlockedFetch, validateFetchUrl } from "./fetch-validator";
 import { SafeImage } from "./SafeImage";
@@ -149,16 +151,7 @@ const markdownComponents: Components = {
 	em: ({ children }) => <em className="italic text-white/75">{children}</em>,
 
 	// ─── Links ─────────────────────────────────────────────────────────────────
-	a: ({ href, children }) => (
-		<a
-			href={href}
-			target="_blank"
-			rel="noopener noreferrer"
-			className="text-accent underline decoration-accent/30 underline-offset-[3px] transition-all duration-150 hover:text-accent-hover hover:decoration-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:ring-offset-2 focus:ring-offset-black"
-		>
-			{children}
-		</a>
-	),
+	a: ({ href, children }) => <DocLink href={href}>{children}</DocLink>,
 
 	// ─── Lists ─────────────────────────────────────────────────────────────────
 	ul: ({ children }) => <ul className="mb-5 space-y-2 pl-5">{children}</ul>,
@@ -239,6 +232,41 @@ const markdownComponents: Components = {
 
 	tr: ({ children }) => <tr className="transition-colors hover:bg-white/[0.02]">{children}</tr>,
 };
+
+const LINK_CLASS =
+	"text-accent underline decoration-accent/30 underline-offset-[3px] transition-all duration-150 hover:text-accent-hover hover:decoration-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:ring-offset-2 focus:ring-offset-black";
+
+/**
+ * Links to site routes (/projects/..., /experience/..., /resume) open the
+ * matching window in place; everything else opens in a new tab.
+ */
+function DocLink({ href, children }: { href?: string; children: ReactNode }) {
+	const { navigate } = useNavigate();
+	const target = href?.startsWith("/") ? parsePathToState(href).windows[0] : undefined;
+
+	const handleClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>) => {
+			if (!target || e.metaKey || e.ctrlKey || e.shiftKey) return;
+			e.preventDefault();
+			navigate(target.id, { props: target.props, launchMethod: "app" });
+		},
+		[navigate, target],
+	);
+
+	if (target) {
+		return (
+			<a href={href} onClick={handleClick} className={LINK_CLASS}>
+				{children}
+			</a>
+		);
+	}
+
+	return (
+		<a href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+			{children}
+		</a>
+	);
+}
 
 function LoadingState() {
 	return (

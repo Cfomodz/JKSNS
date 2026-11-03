@@ -1,14 +1,16 @@
 // Hidden nav for crawler discovery (sr-only links to all routes)
 
-import { getAllCanonicalPaths } from "./path-routing";
+import {
+	getAllCanonicalPaths,
+	getExperienceFileBySlug,
+	getProjectFileBySlug,
+} from "./path-routing";
 
 const PATH_LABELS: Record<string, string> = {
 	"/": "Homepage",
 	"/about": "About",
+	"/resume": "Resume",
 	"/projects": "Projects",
-	"/projects/rmccdc": "RMCCDC",
-	"/projects/nccdc": "National CCDC",
-	"/projects/cyberforce": "DOE CyberForce",
 	"/experience": "Competitions",
 };
 
@@ -16,7 +18,16 @@ const PATH_LABELS: Record<string, string> = {
  * Get a human-readable label for a path.
  */
 function getPathLabel(path: string): string {
-	return PATH_LABELS[path] ?? path.split("/").pop()?.replace(/-/g, " ") ?? path;
+	const known = PATH_LABELS[path];
+	if (known) return known;
+	const [, section, slug] = path.split("/");
+	const file =
+		slug && section === "projects"
+			? getProjectFileBySlug(slug)
+			: slug && section === "experience"
+				? getExperienceFileBySlug(slug)
+				: null;
+	return file?.pageTitle ?? slug?.replace(/-/g, " ") ?? path;
 }
 
 export interface SiteIndexProps {

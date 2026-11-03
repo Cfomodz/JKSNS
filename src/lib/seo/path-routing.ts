@@ -1,6 +1,11 @@
 // Maps clean URL paths to app state and vice versa
 
-import { type FolderId, getFileById, VFS_REGISTRY } from "@/os/filesystem/files";
+import {
+	type FolderId,
+	findFileByContentUrl,
+	findFileBySlug,
+	getFilesForFolder,
+} from "@/os/filesystem/files";
 import {
 	AppID,
 	AUTO_FULLSCREEN_APPS,
@@ -30,36 +35,38 @@ const STATIC_ROUTES: Record<string, StaticRouteConfig> = {
 	},
 	"/projects": { appId: AppID.FolderProjects, props: { folderId: "projects" } },
 	"/experience": { appId: AppID.FolderExperience, props: { folderId: "competitions" } },
-	"/projects/rmccdc": { appId: AppID.Yield },
-	"/projects/nccdc": { appId: AppID.Debate },
-	"/projects/cyberforce": { appId: AppID.PassFX },
 };
 
 /**
- * Project app slugs that map to dedicated app components (not markdown viewer).
+ * URL prefix for each desktop folder. The Competitions folder keeps its
+ * original /experience URL.
  */
-const PROJECT_APP_SLUGS = new Set(["rmccdc", "nccdc", "cyberforce"]);
-
-/**
- * File slug to file ID mapping for project markdown files.
- */
-const PROJECT_FILE_SLUGS: Record<string, string> = {
-	// Note: rmccdc, nccdc, cyberforce are handled by dedicated apps
+const FOLDER_ROUTE_PREFIX: Record<FolderId, string> = {
+	projects: "/projects",
+	competitions: "/experience",
 };
 
 /**
- * File slug to file ID mapping for experience markdown files.
+ * Slug → file ID maps, derived from the VFS so every file in a desktop
+ * folder gets a route without a second registry to keep in sync.
  */
-const EXPERIENCE_FILE_SLUGS: Record<string, string> = {};
+function buildSlugMap(folderId: FolderId): Record<string, string> {
+	return Object.fromEntries(getFilesForFolder(folderId).map((file) => [file.slug, file.id]));
+}
+
+const PROJECT_FILE_SLUGS: Record<string, string> = buildSlugMap("projects");
+const EXPERIENCE_FILE_SLUGS: Record<string, string> = buildSlugMap("competitions");
+
+/**
+ * Old URLs for the competition pages, which used to live under /projects.
+ */
+const LEGACY_COMPETITION_SLUGS = new Set(["rmccdc", "nccdc", "cyberforce", "sandia-hackathon"]);
 
 /**
  * Reverse mapping: AppID to canonical path.
  */
 const APP_TO_PATH: Record<AppID, string> = {
 	[AppID.About]: "/about",
-	[AppID.Yield]: "/projects/rmccdc",
-	[AppID.Debate]: "/projects/nccdc",
-	[AppID.PassFX]: "/projects/cyberforce",
 	[AppID.Terminal]: "/", // Terminal doesn't have a dedicated route
 	[AppID.Settings]: "/", // Settings doesn't have a dedicated route
 	[AppID.Browser]: "/", // Browser doesn't have a dedicated route
@@ -67,11 +74,6 @@ const APP_TO_PATH: Record<AppID, string> = {
 	[AppID.FolderExperience]: "/experience",
 	[AppID.MarkdownViewer]: "/", // Needs file context to determine path
 };
-
-/**
- * File ID to canonical path mapping.
- */
-const FILE_ID_TO_PATH: Record<string, string> = {};
 
 /**
  * Default viewport for SSR window positioning.
@@ -130,7 +132,6 @@ function createWindowForState(appId: AppID, props?: WindowProps): WindowInstance
  * @param pathname - The URL pathname (e.g., "/projects/yield")
  * @returns HydrationState for store initialization
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: route parsing requires comprehensive path matching
 export function parsePathToState(pathname: string): HydrationState {
 	const emptyState: HydrationState = {
 		windows: [],
@@ -161,59 +162,22 @@ export function parsePathToState(pathname: string): HydrationState {
 	// Check dynamic routes
 	const segments = normalizedPath.split("/").filter(Boolean);
 
-	// /projects/[slug] route
-	if (segments[0] === "projects" && segments.length === 2) {
-		const slug = segments[1];
-
-		// Skip if it's a project app (handled by static routes)
-		if (slug && PROJECT_APP_SLUGS.has(slug)) {
-			return emptyState; // Should have been caught by static routes
-		}
-
-		// Look up file by slug
-		if (slug) {
-			const fileId = PROJECT_FILE_SLUGS[slug];
-			if (fileId) {
-				const file = getFileById(fileId);
-				if (file) {
-					const window = createWindowForState(AppID.MarkdownViewer, {
-						url: file.contentUrl,
-						title: file.name,
-					});
-					return {
-						windows: [window],
-						activeWindowId: AppID.MarkdownViewer,
-						fullscreenWindowId: AUTO_FULLSCREEN_APPS.has(AppID.MarkdownViewer)
-							? AppID.MarkdownViewer
-							: null,
-					};
-				}
-			}
-		}
-	}
-
-	// /experience/[slug] route
-	if (segments[0] === "experience" && segments.length === 2) {
-		const slug = segments[1];
-
-		if (slug) {
-			const fileId = EXPERIENCE_FILE_SLUGS[slug];
-			if (fileId) {
-				const file = getFileById(fileId);
-				if (file) {
-					const window = createWindowForState(AppID.MarkdownViewer, {
-						url: file.contentUrl,
-						title: file.name,
-					});
-					return {
-						windows: [window],
-						activeWindowId: AppID.MarkdownViewer,
-						fullscreenWindowId: AUTO_FULLSCREEN_APPS.has(AppID.MarkdownViewer)
-							? AppID.MarkdownViewer
-							: null,
-					};
-				}
-			}
+	// /projects/[slug] and /experience/[slug] routes
+	if (segments.length === 2 && segments[1]) {
+		const folderId = getFolderFromPath(normalizedPath);
+		const file = folderId ? findFileBySlug(folderId, segments[1]) : undefined;
+		if (file) {
+			const window = createWindowForState(AppID.MarkdownViewer, {
+				url: file.contentUrl,
+				title: file.name,
+			});
+			return {
+				windows: [window],
+				activeWindowId: AppID.MarkdownViewer,
+				fullscreenWindowId: AUTO_FULLSCREEN_APPS.has(AppID.MarkdownViewer)
+					? AppID.MarkdownViewer
+					: null,
+			};
 		}
 	}
 
@@ -228,7 +192,6 @@ export function parsePathToState(pathname: string): HydrationState {
  * @param props - Optional window props (for file-based apps)
  * @returns The canonical URL path
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: reverse mapping requires exhaustive file lookups
 export function getCanonicalPath(appId: AppID | null, props?: WindowProps): string {
 	if (!appId) {
 		return "/";
@@ -236,31 +199,11 @@ export function getCanonicalPath(appId: AppID | null, props?: WindowProps): stri
 
 	// For MarkdownViewer, determine path from file URL
 	if (appId === AppID.MarkdownViewer && props?.url) {
-		// Extract file ID from URL
-		const url = props.url;
-
-		// Check for resume special case
-		if (url === "/readmes/resume.md") {
+		if (props.url === "/readmes/resume.md") {
 			return "/resume";
 		}
-
-		// Find matching file ID from URL
-		for (const [folderId, files] of Object.entries(VFS_REGISTRY)) {
-			for (const file of files) {
-				if (file.kind === "file" && file.contentUrl === url) {
-					const path = FILE_ID_TO_PATH[file.id];
-					if (path) {
-						return path;
-					}
-					// Fallback: construct path from folder and file slug
-					const slug = file.id.replace("file.", "");
-					return `/${folderId}/${slug}`;
-				}
-			}
-		}
-
-		// Unknown file - return home
-		return "/";
+		const match = findFileByContentUrl(props.url);
+		return match ? `${FOLDER_ROUTE_PREFIX[match.folderId]}/${match.file.slug}` : "/";
 	}
 
 	return APP_TO_PATH[appId] ?? "/";
@@ -296,9 +239,9 @@ export function getLegacyRedirectPath(appSlug: string, fileSlug?: string): strin
 	const appMappings: Record<string, string> = {
 		about: "/about",
 		resume: "/resume",
-		rmccdc: "/projects/rmccdc",
-		nccdc: "/projects/nccdc",
-		cyberforce: "/projects/cyberforce",
+		rmccdc: "/experience/rmccdc",
+		nccdc: "/experience/nccdc",
+		cyberforce: "/experience/cyberforce",
 		terminal: "/", // No dedicated route
 		settings: "/", // No dedicated route
 		projects: "/projects",
@@ -310,9 +253,11 @@ export function getLegacyRedirectPath(appSlug: string, fileSlug?: string): strin
 
 	// Handle markdown viewer with file param
 	if (normalizedApp === "markdown" && normalizedFile) {
-		// Check project app slugs (rmccdc, nccdc, cyberforce) - legacy URLs may reference these
-		if (PROJECT_APP_SLUGS.has(normalizedFile)) {
-			return `/projects/${normalizedFile}`;
+		// Competition pages used to live under /projects
+		if (LEGACY_COMPETITION_SLUGS.has(normalizedFile)) {
+			return normalizedFile === "sandia-hackathon"
+				? "/experience/sandia"
+				: `/experience/${normalizedFile}`;
 		}
 		// Check project files
 		if (PROJECT_FILE_SLUGS[normalizedFile]) {
@@ -351,7 +296,7 @@ export function getExperienceFileSlugs(): string[] {
  * Check if a project slug is valid (either an app or a file).
  */
 export function isValidProjectSlug(slug: string): boolean {
-	return PROJECT_APP_SLUGS.has(slug) || slug in PROJECT_FILE_SLUGS;
+	return slug in PROJECT_FILE_SLUGS;
 }
 
 /**
@@ -363,57 +308,23 @@ export function isValidExperienceSlug(slug: string): boolean {
 
 /**
  * Get file metadata for a project slug.
- * Returns null for project app slugs (rmccdc, nccdc, cyberforce).
  */
-export function getProjectFileBySlug(
-	slug: string,
-): { fileId: string; contentUrl: string; title: string } | null {
-	const fileId = PROJECT_FILE_SLUGS[slug];
-	if (!fileId) return null;
-
-	const file = getFileById(fileId);
-	if (!file) return null;
-
-	return {
-		fileId,
-		contentUrl: file.contentUrl,
-		title: file.name,
-	};
+export function getProjectFileBySlug(slug: string): RoutedFile | null {
+	return describeFile("projects", slug);
 }
 
 /**
  * Get file metadata for an experience slug.
  */
-export function getExperienceFileBySlug(
-	slug: string,
-): { fileId: string; contentUrl: string; title: string } | null {
-	const fileId = EXPERIENCE_FILE_SLUGS[slug];
-	if (!fileId) return null;
-
-	const file = getFileById(fileId);
-	if (!file) return null;
-
-	return {
-		fileId,
-		contentUrl: file.contentUrl,
-		title: file.name,
-	};
+export function getExperienceFileBySlug(slug: string): RoutedFile | null {
+	return describeFile("competitions", slug);
 }
 
 /**
  * Get all indexable paths for sitemap generation.
  */
 export function getAllCanonicalPaths(): string[] {
-	const paths: string[] = [
-		"/",
-		"/about",
-		"/resume",
-		"/projects",
-		"/projects/rmccdc",
-		"/projects/nccdc",
-		"/projects/cyberforce",
-		"/experience",
-	];
+	const paths: string[] = ["/", "/about", "/resume", "/projects", "/experience"];
 
 	// Add project file paths
 	for (const slug of Object.keys(PROJECT_FILE_SLUGS)) {
@@ -436,4 +347,29 @@ export function getFolderFromPath(pathname: string): FolderId | null {
 	if (segments[0] === "projects") return "projects";
 	if (segments[0] === "experience") return "competitions";
 	return null;
+}
+
+/**
+ * A file reachable at /projects/<slug> or /experience/<slug>.
+ */
+export interface RoutedFile {
+	fileId: string;
+	contentUrl: string;
+	/** Filename shown in the window title bar. */
+	title: string;
+	/** Title for <title> and OpenGraph. */
+	pageTitle: string;
+	description?: string;
+}
+
+function describeFile(folderId: FolderId, slug: string): RoutedFile | null {
+	const file = findFileBySlug(folderId, slug);
+	if (!file) return null;
+	return {
+		fileId: file.id,
+		contentUrl: file.contentUrl,
+		title: file.name,
+		pageTitle: file.pageTitle ?? file.name,
+		description: file.description,
+	};
 }

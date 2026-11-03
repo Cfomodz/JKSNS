@@ -8,6 +8,17 @@
 import type { LucideIcon } from "lucide-react";
 import { FileText } from "lucide-react";
 
+import {
+	ARCHIVE_README,
+	COMPETITION_SEASONS,
+	COMPETITION_SERIES,
+	COMPETITION_SERIES_ORDER,
+	type CompetitionSeason,
+	PROJECTS,
+	seasonReadme,
+	seasonSlug,
+} from "@/lib/portfolio";
+
 /**
  * Supported file types in the VFS.
  */
@@ -23,6 +34,12 @@ export type VFSEntry =
 			name: string;
 			type: FileType;
 			icon: LucideIcon;
+			/** URL path segment: /projects/<slug> or /experience/<slug> */
+			slug: string;
+			/** Page title for metadata (defaults to the filename) */
+			pageTitle?: string;
+			/** Page description for metadata */
+			description?: string;
 			/** URL to fetch content from /public, or inline content string */
 			contentUrl?: string;
 			/** Inline content (used when mirroring terminal VFS text) */
@@ -41,6 +58,9 @@ export interface VirtualFile {
 	name: string;
 	type: FileType;
 	icon: LucideIcon;
+	slug: string;
+	pageTitle?: string;
+	description?: string;
 	contentUrl: string;
 }
 
@@ -49,91 +69,94 @@ export interface VirtualFile {
  */
 export type FolderId = "projects" | "competitions";
 
+function describeSeason(season: CompetitionSeason): string {
+	const count = season.results.length;
+	const events = [...new Set(season.results.map((r) => COMPETITION_SERIES[r.series].name))];
+	return `Jackson Stephens's ${season.id} competition results: ${count} ${count === 1 ? "event" : "events"} (${events.join(", ")}).`;
+}
+
 /**
- * Competition results — mirrors terminal VFS at /competitions/
+ * Competition results and event write-ups — mirrors terminal VFS at /competitions/.
+ * Built from src/lib/portfolio/competitions.ts.
  */
 const COMPETITIONS_TREE: VFSEntry[] = [
+	...COMPETITION_SEASONS.map(
+		(season): VFSEntry => ({
+			kind: "folder",
+			id: `season-${season.id}`,
+			name: season.id,
+			children: [
+				{
+					kind: "file",
+					id: `comp-${season.id}-results`,
+					name: "results.txt",
+					type: "txt",
+					icon: FileText,
+					slug: seasonSlug(season.id),
+					pageTitle: `${season.id} Competition Results`,
+					description: describeSeason(season),
+					contentUrl: seasonReadme(season.id),
+				},
+			],
+		}),
+	),
 	{
 		kind: "folder",
-		id: "season-2026-2027",
-		name: "2026-2027",
-		children: [
-			{
+		id: "competition-events",
+		name: "events",
+		children: COMPETITION_SERIES_ORDER.map((seriesId): VFSEntry => {
+			const series = COMPETITION_SERIES[seriesId];
+			return {
 				kind: "file",
-				id: "comp-2026-2027-results",
-				name: "results.txt",
-				type: "txt",
+				id: `file.${seriesId}`,
+				name: series.fileName,
+				type: "md",
 				icon: FileText,
-				contentUrl: "/readmes/comp-2026-2027.md",
-			},
-		],
-	},
-	{
-		kind: "folder",
-		id: "season-2025-2026",
-		name: "2025-2026",
-		children: [
-			{
-				kind: "file",
-				id: "comp-2025-2026-results",
-				name: "results.txt",
-				type: "txt",
-				icon: FileText,
-				contentUrl: "/readmes/comp-2025-2026.md",
-			},
-		],
-	},
-	{
-		kind: "folder",
-		id: "season-2024-2025",
-		name: "2024-2025",
-		children: [
-			{
-				kind: "file",
-				id: "comp-2024-2025-results",
-				name: "results.txt",
-				type: "txt",
-				icon: FileText,
-				contentUrl: "/readmes/comp-2024-2025.md",
-			},
-		],
-	},
-	{
-		kind: "folder",
-		id: "season-2023-2024",
-		name: "2023-2024",
-		children: [
-			{
-				kind: "file",
-				id: "comp-2023-2024-results",
-				name: "results.txt",
-				type: "txt",
-				icon: FileText,
-				contentUrl: "/readmes/comp-2023-2024.md",
-			},
-		],
+				slug: seriesId,
+				pageTitle: series.name,
+				description: series.summary,
+				contentUrl: series.readme,
+			};
+		}),
 	},
 ];
 
 /**
- * Projects — mirrors terminal VFS at /projects/
+ * Projects — mirrors terminal VFS at /projects/.
+ * Built from src/lib/portfolio/projects.ts.
  */
 const PROJECTS_TREE: VFSEntry[] = [
+	...PROJECTS.map(
+		(project): VFSEntry => ({
+			kind: "file",
+			id: `file.${project.slug}`,
+			name: project.fileName,
+			type: "md",
+			icon: FileText,
+			slug: project.slug,
+			pageTitle: `${project.name} · ${project.tagline}`,
+			description: `${project.name}: ${project.blurb.split(". ")[0]}.`,
+			contentUrl: project.readme,
+		}),
+	),
 	{
-		kind: "file",
-		id: "file.project-kraken",
-		name: "project_kraken.md",
-		type: "md",
-		icon: FileText,
-		contentUrl: "/readmes/project-kraken.md",
-	},
-	{
-		kind: "file",
-		id: "file.claude-preflight",
-		name: "claude_preflight.md",
-		type: "md",
-		icon: FileText,
-		contentUrl: "/readmes/claude-preflight.md",
+		kind: "folder",
+		id: "projects-archive",
+		name: "archive",
+		children: [
+			{
+				kind: "file",
+				id: "file.earlier-work",
+				name: "earlier-work.md",
+				type: "md",
+				icon: FileText,
+				slug: "earlier-work",
+				pageTitle: "Earlier Work",
+				description:
+					"Earlier coursework and personal projects: reverse engineering, web penetration testing, networking labs, and a Raspberry Pi camera.",
+				contentUrl: ARCHIVE_README,
+			},
+		],
 	},
 ];
 
@@ -156,24 +179,7 @@ export function getEntriesForFolder(folderId: FolderId): VFSEntry[] {
 
 export function getFilesForFolder(folderId: FolderId): VirtualFile[] {
 	// Flatten all files from the tree for backward compat
-	const result: VirtualFile[] = [];
-	function walk(entries: VFSEntry[]) {
-		for (const e of entries) {
-			if (e.kind === "file" && e.contentUrl) {
-				result.push({
-					id: e.id,
-					name: e.name,
-					type: e.type,
-					icon: e.icon,
-					contentUrl: e.contentUrl,
-				});
-			} else if (e.kind === "folder") {
-				walk(e.children);
-			}
-		}
-	}
-	walk(VFS_REGISTRY[folderId] ?? []);
-	return result;
+	return getFilesFromEntries(VFS_REGISTRY[folderId] ?? []);
 }
 
 export function getFileById(fileId: string): VirtualFile | undefined {
@@ -187,7 +193,7 @@ export function getFileById(fileId: string): VirtualFile | undefined {
 function findFile(entries: VFSEntry[], id: string): VirtualFile | undefined {
 	for (const e of entries) {
 		if (e.kind === "file" && e.id === id && e.contentUrl) {
-			return { id: e.id, name: e.name, type: e.type, icon: e.icon, contentUrl: e.contentUrl };
+			return toVirtualFile(e, e.contentUrl);
 		}
 		if (e.kind === "folder") {
 			const found = findFile(e.children, id);
@@ -195,4 +201,49 @@ function findFile(entries: VFSEntry[], id: string): VirtualFile | undefined {
 		}
 	}
 	return undefined;
+}
+
+function toVirtualFile(e: VFSEntry & { kind: "file" }, contentUrl: string): VirtualFile {
+	return {
+		id: e.id,
+		name: e.name,
+		type: e.type,
+		icon: e.icon,
+		slug: e.slug,
+		pageTitle: e.pageTitle,
+		description: e.description,
+		contentUrl,
+	};
+}
+
+/**
+ * Find the file and its root folder for a content URL (e.g. "/readmes/rmccdc.md").
+ */
+export function findFileByContentUrl(
+	contentUrl: string,
+): { folderId: FolderId; file: VirtualFile } | undefined {
+	for (const [folderId, entries] of Object.entries(VFS_REGISTRY) as [FolderId, VFSEntry[]][]) {
+		const file = getFilesFromEntries(entries).find((f) => f.contentUrl === contentUrl);
+		if (file) return { folderId, file };
+	}
+	return undefined;
+}
+
+/**
+ * Find a file by its URL slug within a root folder.
+ */
+export function findFileBySlug(folderId: FolderId, slug: string): VirtualFile | undefined {
+	return getFilesFromEntries(VFS_REGISTRY[folderId] ?? []).find((f) => f.slug === slug);
+}
+
+function getFilesFromEntries(entries: VFSEntry[]): VirtualFile[] {
+	const result: VirtualFile[] = [];
+	for (const e of entries) {
+		if (e.kind === "file" && e.contentUrl) {
+			result.push(toVirtualFile(e, e.contentUrl));
+		} else if (e.kind === "folder") {
+			result.push(...getFilesFromEntries(e.children));
+		}
+	}
+	return result;
 }

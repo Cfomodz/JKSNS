@@ -1,6 +1,6 @@
 // Maps URL search params to initial system state for SSR
 
-import { getFileById, VFS_REGISTRY } from "@/os/filesystem/files";
+import { getFileById, getFilesForFolder } from "@/os/filesystem/files";
 import {
 	AppID,
 	AUTO_FULLSCREEN_APPS,
@@ -15,9 +15,6 @@ import {
  * Keep slugs SEO-friendly (lowercase, hyphenated).
  */
 export const APP_SLUG_MAP: Record<string, AppID> = {
-	rmccdc: AppID.Yield,
-	nccdc: AppID.Debate,
-	cyberforce: AppID.PassFX,
 	terminal: AppID.Terminal,
 	about: AppID.About,
 	settings: AppID.Settings,
@@ -32,9 +29,6 @@ export const APP_SLUG_MAP: Record<string, AppID> = {
  * Used for generating canonical URLs.
  */
 export const APP_ID_TO_SLUG: Record<AppID, string> = {
-	[AppID.Yield]: "rmccdc",
-	[AppID.Debate]: "nccdc",
-	[AppID.PassFX]: "cyberforce",
 	[AppID.Terminal]: "terminal",
 	[AppID.About]: "about",
 	[AppID.Settings]: "settings",
@@ -48,18 +42,12 @@ export const APP_ID_TO_SLUG: Record<AppID, string> = {
  * File ID slug mapping for SEO-friendly URLs.
  * Maps URL slugs to VFS file IDs.
  */
-export const FILE_SLUG_MAP: Record<string, string> = {
-	// Projects
-	rmccdc: "file.rmccdc",
-	nccdc: "file.nccdc",
-	cyberforce: "file.cyberforce",
-	"sandia-hackathon": "file.sandia-hackathon",
-	"security-tooling": "file.security-tooling",
-	"forensics-ir": "file.forensics-ir",
-	// Experience
-	"nccdc-competitor": "file.nccdc-competitor",
-	"security-research": "file.security-research",
-};
+export const FILE_SLUG_MAP: Record<string, string> = Object.fromEntries(
+	[...getFilesForFolder("projects"), ...getFilesForFolder("competitions")].map((file) => [
+		file.slug,
+		file.id,
+	]),
+);
 
 /**
  * Reverse mapping: File ID to URL slug.
@@ -244,9 +232,6 @@ export function getAllIndexableURLs(baseUrl: string): string[] {
 	// Add app URLs (excluding markdown viewer, which needs file param)
 	const indexableApps: AppID[] = [
 		AppID.About,
-		AppID.Yield,
-		AppID.Debate,
-		AppID.PassFX,
 		AppID.Terminal,
 		AppID.FolderProjects,
 		AppID.FolderExperience,
@@ -257,10 +242,8 @@ export function getAllIndexableURLs(baseUrl: string): string[] {
 	}
 
 	// Add markdown file URLs
-	for (const files of Object.values(VFS_REGISTRY)) {
-		for (const file of files) {
-			urls.push(`${baseUrl}?app=markdown&file=${FILE_ID_TO_SLUG[file.id] ?? file.id}`);
-		}
+	for (const slug of Object.keys(FILE_SLUG_MAP)) {
+		urls.push(`${baseUrl}?app=markdown&file=${slug}`);
 	}
 
 	return urls;

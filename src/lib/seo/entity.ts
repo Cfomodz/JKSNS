@@ -12,6 +12,7 @@
  * and visible DOM content — critical for entity verification.
  */
 
+import { FOCUS_AREAS } from "@/lib/portfolio";
 import { SITE_CONFIG } from "./metadata";
 
 /**
@@ -96,7 +97,7 @@ export const ENTITY: EntityData = {
 	description: SITE_CONFIG.description,
 
 	// Location
-	location: "",
+	location: "United States",
 	timezone: "EST (UTC-5)",
 
 	// Contact
@@ -129,7 +130,8 @@ export const ENTITY: EntityData = {
 		},
 	],
 
-	// Current employment
+	// Current employment. Leave organization empty to omit worksFor from the
+	// Person schema and the SSR entity card.
 	currentEmployer: {
 		organization: "",
 		organizationUrl: "",
@@ -138,11 +140,11 @@ export const ENTITY: EntityData = {
 		current: true,
 	},
 
-	// Education
+	// Education. Empty entries are omitted from the Person schema.
 	education: [],
 
-	// Skills and expertise
-	knowsAbout: [],
+	// Skills and expertise (shared with the About app's Focus list)
+	knowsAbout: FOCUS_AREAS,
 };
 
 /**

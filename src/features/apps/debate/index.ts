@@ -1,1 +1,0 @@
-export { DebateApp } from "./DebateApp";

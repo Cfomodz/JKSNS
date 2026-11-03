@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { getFileById } from "@/os/filesystem/files";
 import { AppID } from "@/os/store/types";
@@ -14,7 +13,8 @@ export const SITE_CONFIG = {
 	title: "Security Engineer & Researcher",
 	siteName: "JSOS",
 	baseUrl: "https://jackson.stephens.sh",
-	description: "",
+	description:
+		"Security engineer and researcher. Collegiate cyber defense competitor (RMCCDC, National CCDC, DOE CyberForce) building AI-augmented security tools: KRAKEN, claude_preflight, and distillr.",
 	ogImage: "/assets/web_assets/og.png",
 	twitterHandle: "@JKSNS",
 } as const;
@@ -22,47 +22,37 @@ export const SITE_CONFIG = {
 const APP_METADATA: Record<AppID, { title: string; description: string; ogImage?: string }> = {
 	[AppID.About]: {
 		title: "About",
-		description: "About Jackson Stephens.",
-	},
-	[AppID.Yield]: {
-		title: "RMCCDC",
-		description: "Rocky Mountain Collegiate Cyber Defense Competition.",
-	},
-	[AppID.Debate]: {
-		title: "National CCDC",
-		description: "National Collegiate Cyber Defense Competition.",
-	},
-	[AppID.PassFX]: {
-		title: "DOE CyberForce",
-		description: "U.S. Department of Energy CyberForce Competition.",
+		description:
+			"About Jackson Stephens: security engineer and researcher, cyber defense competitor, and builder of AI-augmented security tools.",
 	},
 	[AppID.Terminal]: {
 		title: "Terminal",
-		description: "Terminal.",
+		description:
+			"JSOS terminal: browse projects and competition results from a virtual filesystem, or play Snake, Tetris, and 2048.",
 	},
 	[AppID.Settings]: {
 		title: "Settings",
-		description: "Settings.",
+		description: "JSOS settings: wallpaper, dock, icon, and terminal color preferences.",
 	},
 	[AppID.FolderProjects]: {
 		title: "Projects",
-		description: "Projects.",
+		description:
+			"Projects by Jackson Stephens: KRAKEN, claude_preflight, distillr, JSOS, and earlier work.",
 	},
 	[AppID.FolderExperience]: {
 		title: "Competitions",
-		description: "Competition history.",
+		description:
+			"Competition results by season: CCDC, DOE CyberForce, Sandia National Laboratories, and CTFs.",
 	},
 	[AppID.Browser]: {
-		title: "Browser",
-		description: "Blog browser.",
+		title: "Blog",
+		description: "Technical reports and write-ups by Jackson Stephens.",
 	},
 	[AppID.MarkdownViewer]: {
 		title: "Document",
 		description: "Document viewer.",
 	},
 };
-
-const FILE_METADATA: Record<string, { title?: string; description?: string }> = {};
 
 export function generatePageMetadata(searchParams: PageSearchParams): Metadata {
 	const appSlug = searchParams.app?.toLowerCase();
@@ -116,10 +106,9 @@ export function generatePageMetadata(searchParams: PageSearchParams): Metadata {
 		const file = fileId ? getFileById(fileId) : undefined;
 
 		if (file && fileId) {
-			title = file.name;
-			const fileMeta = FILE_METADATA[fileId];
-			if (fileMeta?.description) {
-				description = fileMeta.description;
+			title = file.pageTitle ?? file.name;
+			if (file.description) {
+				description = file.description;
 			}
 		}
 	}

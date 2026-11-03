@@ -268,11 +268,11 @@ export function parseResumeMarkdown(markdown: string): ParsedResume {
 	let currentItem: ResumeSection | null = null;
 
 	for (const line of lines) {
-		if (line.startsWith("## Featured Security Projects")) {
+		if (/^## Featured (Security )?Projects/.test(line)) {
 			currentSection = "projects";
 			continue;
 		}
-		if (line.startsWith("## Professional Experience")) {
+		if (/^## (Professional )?Experience/.test(line)) {
 			currentSection = "experience";
 			continue;
 		}

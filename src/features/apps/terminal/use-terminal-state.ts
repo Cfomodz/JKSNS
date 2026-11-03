@@ -2,6 +2,18 @@
 import { useCallback, useRef, useState } from "react";
 
 import { type AllowlistedCommand, AnalyticsEvent, trackEvent } from "@/lib/analytics";
+import {
+	COMPETITION_SEASONS,
+	COMPETITION_SERIES,
+	COMPETITION_SERIES_ORDER,
+	PROFILE_INTRO,
+	PROFILE_PARAGRAPHS,
+	PROJECTS,
+	renderArchiveText,
+	renderProjectText,
+	renderSeasonText,
+	renderSeriesText,
+} from "@/lib/portfolio";
 
 import type { CommandDefinition, HistoryEntry, TerminalState } from "./types";
 
@@ -21,124 +33,59 @@ interface VFSNode {
 	content?: string;
 }
 
+function fileNode(content: string): VFSNode {
+	return { type: "file", content };
+}
+
+// Terminal filesystem, built from the same data as the desktop folders
+// (src/lib/portfolio) so `ls`, `cat`, and the Finder windows always agree.
 const VFS: VFSNode = {
 	type: "dir",
 	children: {
-		"projects": {
+		projects: {
 			type: "dir",
 			children: {
-				"project_kraken.md": {
-					type: "file",
-					content: [
-						"project_kraken — Kraken: A Cascade CTF-Autosolver (v0.2.5)",
-						"",
-						"Cheapest-first cascade CTF auto-solver. Deterministic tooling first,",
-						"model reasoning only when computation runs out. Deterministic flag oracle.",
-						"",
-						"Repo:  https://github.com/JKSNS/project_kraken",
-						"Paper: /papers/project_kraken-v0.2.5.pdf",
-					].join("\n"),
-				},
-				"claude_preflight.md": {
-					type: "file",
-					content: [
-						"claude_preflight — Directing Intelligence with Governed Agents (v0.9.9)",
-						"",
-						"Fail-closed Cedar policy gate, human ratification, anti-forgetting",
-						"session bundle for frontier coding agents.",
-						"",
-						"Repo:  https://github.com/JKSNS/claude_preflight",
-						"Paper: /papers/claude_preflight_v0.9.9.pdf",
-					].join("\n"),
+				...Object.fromEntries(
+					PROJECTS.map((project) => [project.fileName, fileNode(renderProjectText(project))]),
+				),
+				archive: {
+					type: "dir",
+					children: { "earlier-work.md": fileNode(renderArchiveText()) },
 				},
 			},
 		},
-		"competitions": {
+		competitions: {
 			type: "dir",
 			children: {
-				"2026-2027": {
+				...Object.fromEntries(
+					COMPETITION_SEASONS.map((season) => [
+						season.id,
+						{ type: "dir", children: { "results.txt": fileNode(renderSeasonText(season)) } },
+					]),
+				),
+				events: {
 					type: "dir",
-					children: {
-						"results.txt": {
-							type: "file",
-							content: [
-								"2026-2027",
-								"",
-								"Sandia National Laboratories Lab-Wide ML/DL Hackathon - 1st Place",
-							].join("\n"),
-						},
-					},
-				},
-				"2025-2026": {
-					type: "dir",
-					children: {
-						"results.txt": {
-							type: "file",
-							content: [
-								"2025-2026",
-								"",
-								"RMCCDC Regionals - 2nd Place",
-								"RMCCDC Qualifiers - 1st Place",
-								"U.S. DoE's CyberForce - Competitor",
-								"WRCCDC Invitational #1 - 3rd Place",
-								"WRCCDC Invitational #3 - 2nd Place",
-								"WRCCDC Invitational #4 - Competitor",
-								"WRCCDC Invitational #5 - 3rd Place",
-								"MWCCDC Invitational #1 - 2nd Place",
-								"MWCCDC Invitational #2 - Competitor",
-								"MWCCDC Invitational #3 - 1st Place",
-								"Sandia National Laboratories Internal ML Competition - 1st Place",
-								"Sandia National Laboratories TracerFire DFIR CTF - 2nd Place",
-								"Lockheed Martin Aerospace Cyber Range DefCon 33 CTF - 1st blood, challenge 12",
-							].join("\n"),
-						},
-					},
-				},
-				"2024-2025": {
-					type: "dir",
-					children: {
-						"results.txt": {
-							type: "file",
-							content: [
-								"2024-2025",
-								"",
-								"National CCDC - Competitor",
-								"RMCCDC Regionals - 1st Place",
-								"RMCCDC Qualifiers - 1st Place",
-								"WRCCDC Invitational #3 - Competitor",
-								"WRCCDC Invitational #2 - Competitor",
-								"MWCCDC Invitational - 2nd Place",
-								"eCitadel - Competitor",
-								"U.S. DoE's CyberForce - Competitor",
-							].join("\n"),
-						},
-					},
-				},
-				"2023-2024": {
-					type: "dir",
-					children: {
-						"results.txt": {
-							type: "file",
-							content: [
-								"2023-2024",
-								"",
-								"National CCDC - Alternate",
-								"RMCCDC Regionals - 1st Place (Alternate)",
-								"RMCCDC Qualifiers - 1st Place (Alternate)",
-								"Hivestorm - Competitor",
-							].join("\n"),
-						},
-					},
+					children: Object.fromEntries(
+						COMPETITION_SERIES_ORDER.map((id) => [
+							COMPETITION_SERIES[id].fileName,
+							fileNode(renderSeriesText(id)),
+						]),
+					),
 				},
 			},
 		},
-		"about": {
+		about: {
 			type: "dir",
 			children: {
-				"about.txt": {
-					type: "file",
-					content: "I like to build cool things, like this website!",
-				},
+				"about.txt": fileNode([PROFILE_INTRO, ...PROFILE_PARAGRAPHS].join("\n\n")),
+				"contact.txt": fileNode(
+					[
+						"Email:    jackson@stephens.sh",
+						"GitHub:   https://github.com/JKSNS",
+						"LinkedIn: https://www.linkedin.com/in/profile-jackson-stephens/",
+						"Resume:   https://jackson.stephens.sh/resume",
+					].join("\n"),
+				),
 			},
 		},
 	},
@@ -390,9 +337,10 @@ const COMMAND_REGISTRY: Record<string, CommandDefinition> = {
 		name: "about",
 		description: "Learn about Jackson",
 		handler: () => [
-			"I like to build cool things, like this website!",
+			PROFILE_INTRO,
 			"",
-			"Type `help` to keep exploring.",
+			...PROFILE_PARAGRAPHS.flatMap((p) => [p, ""]),
+			"Try `ls projects`, `cat competitions/2025-2026/results.txt`, or `tree`.",
 		],
 	},
 	fortune: {

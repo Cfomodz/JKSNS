@@ -67,7 +67,7 @@ export const TerminalPanel = memo(function TerminalPanel() {
 						<span style={{ color: `rgba(${TERMINAL_FONT_COLORS[terminalFontColor].value}, 0.9)` }}>ls projects</span>
 					</div>
 					<div style={{ color: `rgba(${TERMINAL_FONT_COLORS[terminalFontColor].value}, 0.7)` }}>
-						yield-studio/  debate-app/  passfx/
+						about/  competitions/  projects/
 					</div>
 				</div>
 			</div>

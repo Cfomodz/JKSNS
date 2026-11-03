@@ -46,6 +46,14 @@ export const DESKTOP_ITEMS: DesktopItem[] = [
 		appId: AppID.Browser,
 		iconType: "file",
 	},
+	{
+		id: "resume",
+		label: "Resume",
+		appId: AppID.MarkdownViewer,
+		iconType: "file",
+		contentUrl: "/readmes/resume.md",
+		title: "Resume",
+	},
 ];
 
 function rectsIntersect(a: SelectionRect, b: SelectionRect): boolean {

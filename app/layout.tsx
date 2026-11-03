@@ -5,6 +5,7 @@ import {
 	generateProfilePageSchema,
 	generateWebSiteSchema,
 	renderJsonLd,
+	SITE_CONFIG,
 	SiteIndex,
 } from "@/lib/seo";
 import "./globals.css";
@@ -43,8 +44,7 @@ export const metadata: Metadata = {
 	other: {
 		"color-scheme": "dark",
 	},
-	description:
-		"Security Engineer & Researcher specializing in penetration testing, vulnerability research, and building secure systems.",
+	description: SITE_CONFIG.description,
 	icons: {
 		icon: [
 			{ url: "/assets/web_assets/favicon.ico", sizes: "any" },
@@ -58,8 +58,7 @@ export const metadata: Metadata = {
 		locale: "en_US",
 		siteName: "Jackson Stephens",
 		title: "Jackson Stephens | Security Engineer & Researcher",
-		description:
-			"Security Engineer & Researcher specializing in penetration testing, vulnerability research, and building secure systems.",
+		description: SITE_CONFIG.description,
 		images: [
 			{
 				url: "/assets/web_assets/og.png",
@@ -72,8 +71,7 @@ export const metadata: Metadata = {
 	twitter: {
 		card: "summary_large_image",
 		title: "Jackson Stephens | Security Engineer & Researcher",
-		description:
-			"Security Engineer & Researcher specializing in penetration testing, vulnerability research, and building secure systems.",
+		description: SITE_CONFIG.description,
 		images: ["/assets/web_assets/og.png"],
 	},
 };

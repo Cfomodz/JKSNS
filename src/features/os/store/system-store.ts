@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { AnalyticsEvent, trackEvent } from "@/lib/analytics";
+import { DEFAULT_WALLPAPER_PATH } from "@/os/desktop/wallpapers";
 
 import type {
 	AppID,
@@ -133,7 +134,7 @@ export const useSystemStore = create<SystemStore>()(
 			activeWindowId: null,
 			fullscreenWindowId: null,
 			// CUSTOMIZE: Default wallpaper path (null = grid/vignette background)
-			wallpaper: "/assets/wallpapers/wall-9.jpg",
+			wallpaper: DEFAULT_WALLPAPER_PATH,
 			dockConfig: DEFAULT_DOCK_CONFIG,
 			terminalFontColor: "white" as const,
 			iconColor: "blue" as const,
@@ -162,9 +163,14 @@ export const useSystemStore = create<SystemStore>()(
 				const launchMethod: LaunchMethod = config?.launchMethod ?? "system";
 
 				if (existingWindow) {
-					// Already open — restore if minimized and bring to front
+					// Already open — restore if minimized and bring to front. New props
+					// (e.g. a different document in the Markdown Viewer) replace the old ones.
 					const updatedWindows = windows.filter((w) => w.id !== appId);
-					updatedWindows.push({ ...existingWindow, status: "open" });
+					updatedWindows.push({
+						...existingWindow,
+						status: "open",
+						props: config?.props ?? existingWindow.props,
+					});
 
 					set({
 						windows: updatedWindows,

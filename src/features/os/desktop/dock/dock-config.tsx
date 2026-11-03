@@ -1,6 +1,6 @@
-import { Folder, Globe, Info, Settings, SquareTerminal, type LucideIcon } from "lucide-react";
+import { Globe, Info, type LucideIcon, Settings, SquareTerminal } from "lucide-react";
 
-import { AppID, DockStackID } from "@/os/store";
+import { AppID, type DockStackID } from "@/os/store";
 
 interface DockIconStyle {
 	icon?: LucideIcon;
@@ -70,16 +70,6 @@ export const DOCK_ITEMS: DockAppItem[] = [
 		gradient: ["#8E8E93", "#636366"],
 	},
 ];
-
-// CUSTOMIZE: Stack folder for grouping apps on mobile (e.g., project portfolio)
-export const PROJECTS_STACK: DockStackItem = {
-	type: "stack",
-	id: DockStackID.Projects,
-	label: "Projects",
-	icon: Folder,
-	gradient: ["#5AC8FA", "#007AFF"],
-	contents: [AppID.Yield, AppID.Debate, AppID.PassFX],
-};
 
 // CUSTOMIZE: Add, remove, or reorder mobile dock apps here.
 // Stacks group multiple apps into one folder icon to save horizontal space.

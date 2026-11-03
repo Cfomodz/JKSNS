@@ -90,14 +90,16 @@ export function SSREntityCard({ includeH1 = true }: SSREntityCardProps) {
 				</ul>
 			</nav>
 
-			{/* Current employment */}
-			<div itemProp="worksFor" itemScope itemType="https://schema.org/Organization">
-				<span>Works at: </span>
-				<a href={ENTITY.currentEmployer.organizationUrl} itemProp="url">
-					<span itemProp="name">{ENTITY.currentEmployer.organization}</span>
-				</a>
-				<span> as {ENTITY.currentEmployer.role}</span>
-			</div>
+			{/* Current employment (only when an employer is recorded) */}
+			{ENTITY.currentEmployer.organization && (
+				<div itemProp="worksFor" itemScope itemType="https://schema.org/Organization">
+					<span>Works at: </span>
+					<a href={ENTITY.currentEmployer.organizationUrl || undefined} itemProp="url">
+						<span itemProp="name">{ENTITY.currentEmployer.organization}</span>
+					</a>
+					<span> as {ENTITY.currentEmployer.role}</span>
+				</div>
+			)}
 
 			{/* Education */}
 			{ENTITY.education.map((edu) => (
